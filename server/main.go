@@ -28,6 +28,8 @@ _)      \.___.,|     .'
 [ENTER YOUR NAME]:`
 )
 
+var clients = make(map[net.Conn]string)
+
 func main() {
 	start()
 }
@@ -53,15 +55,17 @@ func start() {
 		// Display connection details
 		fmt.Printf("New connection from: %s\n", conn.RemoteAddr().String())
 
+		clients[conn] = conn.RemoteAddr().String()
+
 		// Close the connection (no further communication for simplicity)
-		handleClient(conn)
+		go handleClient(conn)
 	}
 }
 
 func handleClient(conn net.Conn) {
 	defer conn.Close() // Ensure the connection is closed when done
 	reader := bufio.NewReader(conn)
-	user := conn.RemoteAddr().String()
+	user := clients[conn]
 
 	for {
 		// Read message from the client
@@ -73,11 +77,13 @@ func handleClient(conn net.Conn) {
 
 		fmt.Printf("Message received from %s: %s", user, message)
 
-		// Send the message back to the client
-		_, err = conn.Write([]byte(user + ": " + message))
-		if err != nil {
-			fmt.Println("Error sending message to client:", err)
-			break
+		for c, _ := range clients {
+			// Send the message back to the client
+			_, err = c.Write([]byte(user + ": " + message))
+			if err != nil {
+				fmt.Println("Error sending message to client:", err)
+				break
+			}
 		}
 	}
 }
