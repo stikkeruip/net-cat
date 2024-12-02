@@ -16,7 +16,7 @@ func main() {
 
 func connect() net.Conn {
 	// Connect to the server
-	conn, err := net.Dial("tcp", "127.0.0.1:8080") // Replace with server IP/port if not local
+	conn, err := net.Dial("tcp", "94.131.129.37:8080") // Replace with server IP/port if not local
 	if err != nil {
 		fmt.Println("Error connecting to server:", err)
 		return nil

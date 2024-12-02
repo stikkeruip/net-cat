@@ -35,7 +35,7 @@ func main() {
 }
 
 func start() {
-	listener, err := net.Listen("tcp", "127.0.0.1:8080") // Listen on port 8080
+	listener, err := net.Listen("tcp", "94.131.129.37:8080") // Listen on port 8080
 	if err != nil {
 		fmt.Println("Error starting TCP server:", err)
 		return
@@ -43,8 +43,11 @@ func start() {
 	defer listener.Close()
 	fmt.Println("Server is listening on port 8080...")
 
+	listen(listener)
+}
+
+func listen(listener net.Listener) {
 	for {
-		// Step 2: Accept an incoming connection
 		conn, err := listener.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection:", err)
@@ -52,12 +55,10 @@ func start() {
 		}
 		fmt.Println("New connection accepted")
 
-		// Display connection details
 		fmt.Printf("New connection from: %s\n", conn.RemoteAddr().String())
 
 		clients[conn] = conn.RemoteAddr().String()
 
-		// Close the connection (no further communication for simplicity)
 		go handleClient(conn)
 	}
 }
