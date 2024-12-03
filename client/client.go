@@ -33,6 +33,14 @@ func handleUserInput(conn net.Conn) {
 		if scanner.Scan() {
 			message := scanner.Text() // Read user input
 
+			// Check if the message is the quit command
+			if message == "/quit" {
+				fmt.Println("Disconnecting from the server...")
+				conn.Write([]byte(message + "\n"))
+				conn.Close()
+				os.Exit(0)
+			}
+
 			// Send the message to the server
 			_, err := conn.Write([]byte(message + "\n"))
 			if err != nil {
