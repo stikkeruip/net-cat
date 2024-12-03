@@ -3,27 +3,27 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
 
 func main() {
-
 	conn := connect()
+	if conn == nil {
+		return
+	}
 	go serverResponse(conn)
 	handleUserInput(conn)
 }
 
 func connect() net.Conn {
-	// Connect to the server
-	conn, err := net.Dial("tcp", "94.131.129.37:8080") // Replace with server IP/port if not local
+	conn, err := net.Dial("tcp", "127.0.0.1:8080")
 	if err != nil {
 		fmt.Println("Error connecting to server:", err)
 		return nil
 	}
-	//defer conn.Close()
 	fmt.Println("Connected to server")
-
 	return conn
 }
 
@@ -31,14 +31,17 @@ func handleUserInput(conn net.Conn) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		if scanner.Scan() {
-			message := scanner.Text() + "\n" // Add a newline for the server to process
-			// Clear the user's input after sending
-			fmt.Print("\033[1A\033[2K") // ANSI escape code to clear the last line
-			_, err := conn.Write([]byte(message))
+			message := scanner.Text() // Read user input
+
+			// Send the message to the server
+			_, err := conn.Write([]byte(message + "\n"))
 			if err != nil {
 				fmt.Println("Error sending message to server:", err)
 				break
 			}
+
+			// Remove the previous line (user's input)
+			fmt.Print("\033[F\033[K")
 		} else {
 			fmt.Println("Error reading input or EOF")
 			break
@@ -47,15 +50,12 @@ func handleUserInput(conn net.Conn) {
 }
 
 func serverResponse(conn net.Conn) {
-	reader := bufio.NewReader(conn)
 	for {
-		// Read messages from the server
-		message, err := reader.ReadString('\n')
+		// Copy data from the server to stdout
+		_, err := io.Copy(os.Stdout, conn)
 		if err != nil {
 			fmt.Println("Disconnected from server")
 			os.Exit(0)
 		}
-		// Display the server's response
-		fmt.Print(message)
 	}
 }
