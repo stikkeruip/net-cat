@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type Client struct {
@@ -77,6 +78,26 @@ func handleClient(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 
 	for {
+		if !client.HasUsername {
+			message, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Printf("Client disconnected: %v\n", conn.RemoteAddr())
+				delete(clients, conn)
+				return
+			}
+			message = strings.TrimSpace(message)
+
+			if validName(client, message) {
+				client.Username = message
+				client.HasUsername = true
+				fmt.Printf("%s has joined the chat.\n", client.Username)
+				broadcastJoin(client)
+			} else {
+				conn.Write([]byte("[ENTER YOUR NAME]: "))
+			}
+			continue
+		}
+
 		message, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Printf("Client disconnected: %v\n", conn.RemoteAddr())
@@ -86,27 +107,6 @@ func handleClient(conn net.Conn) {
 		}
 
 		message = strings.TrimSpace(message)
-
-		if !client.HasUsername {
-			for {
-				if validName(client, message) {
-					break
-				}
-				message, err = reader.ReadString('\n')
-				if err != nil {
-					fmt.Printf("Client disconnected: %v\n", conn.RemoteAddr())
-					broadcastLeave(client)
-					delete(clients, conn)
-					return
-				}
-			}
-			client.Username = message
-			client.HasUsername = true
-			fmt.Printf("%s has joined the chat.\n", client.Username)
-			broadcastJoin(client)
-			continue
-		}
-
 		broadcastMessage(client, message)
 	}
 }
@@ -126,8 +126,12 @@ func welcomeClient(client *Client) {
 }
 
 func broadcastMessage(sender *Client, message string) {
+	formattedMessage := fmt.Sprintf("[%s][%s]: %s\n", time.Now().Format("2006-01-02 15:04:05"), sender.Username, message)
+	addToLog(formattedMessage)
 	for _, client := range clients {
-		formattedMessage := fmt.Sprintf("%s: %s\n", sender.Username, message)
+		if !client.HasUsername {
+			continue
+		}
 		_, err := client.Conn.Write([]byte(formattedMessage))
 		if err != nil {
 			fmt.Printf("Error broadcasting to user, %s", client.Username)
@@ -136,8 +140,12 @@ func broadcastMessage(sender *Client, message string) {
 }
 
 func broadcastJoin(sender *Client) {
+	formattedMessage := fmt.Sprintf("%s has joined the chat!\n", sender.Username)
+	addToLog(formattedMessage)
 	for _, client := range clients {
-		formattedMessage := fmt.Sprintf("%s has joined the chat!\n", sender.Username)
+		if !client.HasUsername {
+			continue
+		}
 		_, err := client.Conn.Write([]byte(formattedMessage))
 		if err != nil {
 			fmt.Printf("Error broadcasting join, %s", client.Username)
@@ -146,8 +154,12 @@ func broadcastJoin(sender *Client) {
 }
 
 func broadcastLeave(sender *Client) {
+	formattedMessage := fmt.Sprintf("%s has left the chat!\n", sender.Username)
+	addToLog(formattedMessage)
 	for _, client := range clients {
-		formattedMessage := fmt.Sprintf("%s has left the chat!\n", sender.Username)
+		if !client.HasUsername {
+			continue
+		}
 		_, err := client.Conn.Write([]byte(formattedMessage))
 		if err != nil {
 			fmt.Printf("Error broadcasting leave, %s", client.Username)
@@ -184,4 +196,21 @@ func validName(client *Client, name string) bool {
 	}
 
 	return true
+}
+
+func addToLog(message string) {
+	if chatLog == nil {
+		fmt.Println("Error: chat log file is not open")
+		return
+	}
+
+	_, err := chatLog.WriteString(message)
+	if err != nil {
+		fmt.Println("Error writing to chat log:", err)
+	}
+	// Ensure the log entry is immediately written to the file
+	err = chatLog.Sync()
+	if err != nil {
+		fmt.Println("Error syncing chat log:", err)
+	}
 }
