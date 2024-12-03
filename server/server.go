@@ -90,7 +90,9 @@ func handleClient(conn net.Conn) {
 			if validName(client, message) {
 				client.Username = message
 				client.HasUsername = true
+				printChatLog(client)
 				fmt.Printf("%s has joined the chat.\n", client.Username)
+
 				broadcastJoin(client)
 			} else {
 				conn.Write([]byte("[ENTER YOUR NAME]: "))
@@ -212,5 +214,21 @@ func addToLog(message string) {
 	err = chatLog.Sync()
 	if err != nil {
 		fmt.Println("Error syncing chat log:", err)
+	}
+}
+
+func printChatLog(client *Client) {
+	// Read the entire chat log file
+	content, err := os.ReadFile("chat.log")
+	if err != nil {
+		fmt.Println("Error reading chat log:", err)
+		return
+	}
+
+	// Send the content to the client
+	_, err = client.Conn.Write(content)
+	if err != nil {
+		fmt.Println("Error sending chat log to client:", err)
+		return
 	}
 }

@@ -50,12 +50,13 @@ func handleUserInput(conn net.Conn) {
 }
 
 func serverResponse(conn net.Conn) {
-	for {
-		// Copy data from the server to stdout
-		_, err := io.Copy(os.Stdout, conn)
-		if err != nil {
-			fmt.Println("Disconnected from server")
-			os.Exit(0)
+	_, err := io.Copy(os.Stdout, conn)
+	if err != nil {
+		if err == io.EOF {
+			fmt.Println("\nServer closed the connection. Exiting...")
+		} else {
+			fmt.Println("\nLost connection to server:", err)
 		}
+		os.Exit(0)
 	}
 }
