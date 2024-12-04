@@ -109,7 +109,9 @@ func handleClient(conn net.Conn) {
 		}
 
 		message = strings.TrimSpace(message)
-		broadcastMessage(client, message)
+		if message != "" {
+			broadcastMessage(client, message)
+		}
 	}
 }
 
@@ -128,15 +130,19 @@ func welcomeClient(client *Client) {
 }
 
 func broadcastMessage(sender *Client, message string) {
+
 	formattedMessage := fmt.Sprintf("[%s][%s]: %s\n", time.Now().Format("2006-01-02 15:04:05"), sender.Username, message)
-	addToLog(formattedMessage)
-	for _, client := range clients {
-		if !client.HasUsername {
-			continue
-		}
-		_, err := client.Conn.Write([]byte(formattedMessage))
-		if err != nil {
-			fmt.Printf("Error broadcasting to user, %s", client.Username)
+	if formattedMessage != "\n" {
+
+		addToLog(formattedMessage)
+		for _, client := range clients {
+			if !client.HasUsername {
+				continue
+			}
+			_, err := client.Conn.Write([]byte(formattedMessage))
+			if err != nil {
+				fmt.Printf("Error broadcasting to user, %s", client.Username)
+			}
 		}
 	}
 }
