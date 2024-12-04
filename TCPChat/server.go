@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -37,13 +38,30 @@ func start() {
 		fmt.Println("Error opening chat.log:", err)
 		return
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:8080") // Listen on port 8080
+	port := "8989"
+	if len(os.Args) > 2 {
+		fmt.Println("[USAGE]: ./TCPChat $port")
+		os.Exit(1)
+	} else if len(os.Args) == 2 {
+		intPort, err := strconv.Atoi(os.Args[1])
+		if err != nil {
+			fmt.Println("Error while converting string to")
+			os.Exit(0)
+		}
+		if intPort < 1024 || intPort > 65535 {
+			fmt.Println("Port needs to be between 1024 and 65535.")
+			os.Exit(1)
+		}
+		port = os.Args[1]
+	}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:"+port) // Listen on port 8080
 	if err != nil {
 		fmt.Println("Error starting TCP server:", err)
 		return
 	}
 	defer listener.Close()
-	fmt.Println("Server is listening on port 8080...")
+	fmt.Println("Server is listening on port " + port + "...")
 
 	listen(listener)
 }
