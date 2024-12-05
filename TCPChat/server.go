@@ -33,7 +33,7 @@ func main() {
 
 func start() {
 	var err error
-	chatLog, err = os.OpenFile("chat.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	chatLog, err = os.OpenFile("TCPChat/chat.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println("Error opening chat.log:", err)
 		return
@@ -54,8 +54,12 @@ func start() {
 		}
 		port = os.Args[1]
 	}
+	IP, err := GetIPFromEn0()
 
-	listener, err := net.Listen("tcp", "127.0.0.1:"+port) // Listen on port 8080
+	if err != nil {
+		fmt.Println("error getting the IP")
+	}
+	listener, err := net.Listen("tcp", IP+":"+port) // Listen on port 8080
 	if err != nil {
 		fmt.Println("Error starting TCP server:", err)
 		return
@@ -255,4 +259,34 @@ func printChatLog(client *Client) {
 		fmt.Println("Error sending chat log to client:", err)
 		return
 	}
+}
+
+// GetIPFromEn0 returns the IPv4 address for the en0 interface
+func GetIPFromEn0() (string, error) {
+	// Get a list of all network interfaces
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+
+	for _, iface := range interfaces {
+		// Check if the interface name is "en0"
+		if iface.Name == "en0" {
+			// Get the addresses associated with this interface
+			addrs, err := iface.Addrs()
+			if err != nil {
+				return "", err
+			}
+
+			// Loop through the addresses and return the first IPv4 address
+			for _, addr := range addrs {
+				ipNet, ok := addr.(*net.IPNet)
+				if ok && ipNet.IP.To4() != nil {
+					return ipNet.IP.String(), nil
+				}
+			}
+		}
+	}
+
+	return "", fmt.Errorf("no IPv4 address found for interface en0")
 }
