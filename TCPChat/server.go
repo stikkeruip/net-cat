@@ -54,7 +54,7 @@ func start() {
 		}
 		port = os.Args[1]
 	}
-	IP, err := GetIPFromEn0()
+	IP, err := GetIP()
 	fmt.Println("IP Address: " + IP)
 	if err != nil {
 		fmt.Println("error getting the IP")
@@ -266,32 +266,35 @@ func printChatLog(client *Client) {
 	}
 }
 
-// GetIPFromEn0 returns the IPv4 address for the en0 interface
-func GetIPFromEn0() (string, error) {
-	// Get a list of all network interfaces
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return "", err
-	}
+func GetIP() (string, error) {
+	// List of interfaces to check, in order: wlan0 first, then en0
+	interfacesToCheck := []string{"wlan0", "en0"}
 
-	for _, iface := range interfaces {
-		// Check if the interface name is "en0"
-		if iface.Name == "en0" {
-			// Get the addresses associated with this interface
-			addrs, err := iface.Addrs()
-			if err != nil {
-				return "", err
-			}
+	for _, interfaceName := range interfacesToCheck {
+		// Get a list of all network interfaces
+		interfaces, err := net.Interfaces()
+		if err != nil {
+			return "", err
+		}
 
-			// Loop through the addresses and return the first IPv4 address
-			for _, addr := range addrs {
-				ipNet, ok := addr.(*net.IPNet)
-				if ok && ipNet.IP.To4() != nil {
-					return ipNet.IP.String(), nil
+		for _, iface := range interfaces {
+			if iface.Name == interfaceName {
+				// Get the addresses associated with this interface
+				addrs, err := iface.Addrs()
+				if err != nil {
+					return "", err
+				}
+
+				// Loop through the addresses and return the first IPv4 address
+				for _, addr := range addrs {
+					ipNet, ok := addr.(*net.IPNet)
+					if ok && ipNet.IP.To4() != nil {
+						return ipNet.IP.String(), nil
+					}
 				}
 			}
 		}
 	}
 
-	return "", fmt.Errorf("no IPv4 address found for interface en0")
+	return "", fmt.Errorf("no IPv4 address found for wlan0 or en0")
 }
