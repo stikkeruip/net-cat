@@ -152,6 +152,11 @@ func welcomeClient(client *Client) {
 }
 
 func broadcastMessage(sender *Client, message string) {
+	// Use a regular expression to filter out non-printable characters
+	validChars := regexp.MustCompile(`^[\x20-\x7E]+$`) // Allow only printable ASCII characters
+	if !validChars.MatchString(message) {
+		return
+	}
 
 	formattedMessage := fmt.Sprintf("[%s][%s]: %s\n", time.Now().Format("2006-01-02 15:04:05"), sender.Username, message)
 	if formattedMessage != "\n" {
