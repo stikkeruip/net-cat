@@ -55,7 +55,7 @@ func start() {
 		port = os.Args[1]
 	}
 	IP, err := GetIPFromEn0()
-
+	fmt.Println("IP Address: " + IP)
 	if err != nil {
 		fmt.Println("error getting the IP")
 	}
